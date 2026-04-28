@@ -6,6 +6,8 @@
 
 Este painel foi desenvolvido para centralizar, calcular e visualizar os custos operacionais das análises do laboratório químico da **Agrorobótica**. A ferramenta automatiza a transformação de dados brutos de Ordens de Serviço (OS) em indicadores financeiros e quantitativos.
 
+Painel: ![Painel - Análises Laboratório Químico](https://custoquimico-agrorobotica.streamlit.app/)
+
 ---
 
 ## Funcionalidades
