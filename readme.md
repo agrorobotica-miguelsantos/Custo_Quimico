@@ -26,15 +26,3 @@ Este dashboard foi desenvolvido para centralizar, calcular e visualizar os custo
 ### Pré-requisitos
 * **Python 3.8** ou superior.
 * Bibliotecas necessárias: `pandas`, `streamlit`, `plotly`, `openpyxl`.
-
-### Instalação
-1.  Clone o repositório ou baixe os arquivos do projeto.
-2.  Instale as dependências via pip:
-    ```bash
-    pip install pandas streamlit plotly openpyxl
-    ```
-
-### Execução
-Para iniciar o dashboard, execute o comando abaixo no terminal dentro da pasta do projeto:
-```bash
-streamlit run dashboard.py
