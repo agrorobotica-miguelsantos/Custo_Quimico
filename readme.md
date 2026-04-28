@@ -1,4 +1,4 @@
-# 📊 Dashboard de Gestão de Custos — Análises Laboratório Químico
+# Painel de Gestão de Custos — Análises Laboratório Químico
 
 ![Streamlit](https://img.shields.io/badge/Streamlit-FF4B4B?style=for-the-badge&logo=Streamlit&logoColor=white)
 ![Python](https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white)
@@ -8,7 +8,7 @@ Este dashboard foi desenvolvido para centralizar, calcular e visualizar os custo
 
 ---
 
-## 🚀 Funcionalidades
+## Funcionalidades
 
 * **Cálculo Automatizado de Custos**: Processamento instantâneo do custo por amostra e do custo por Prova de Lote (PL).
 * **Filtros Dinâmicos**: Navegação intuitiva por Ano de Referência e Ordem de Serviço via Sidebar.
@@ -21,7 +21,7 @@ Este dashboard foi desenvolvido para centralizar, calcular e visualizar os custo
 
 ---
 
-## 🛠️ Requisitos e Instalação
+## Requisitos e Instalação
 
 ### Pré-requisitos
 * **Python 3.8** ou superior.
