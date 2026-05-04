@@ -1,3 +1,4 @@
+# %%
 import pandas as pd
 from pathlib import Path
 from datetime import datetime
@@ -9,7 +10,7 @@ def processar_e_consolidar():
     arquivo_saida = os.path.join(caminho_entrada, "dados_concatenado.csv")
 
     diretorio = Path(caminho_entrada)
-    arquivos = list(diretorio.glob("OS_*/*/Fazenda_*.xlsx"))
+    arquivos = list(diretorio.glob("OS_*/Fazenda_*.xlsx"))
     arquivos = [f for f in arquivos if f.is_file() and not f.name.startswith("~$")]
 
     if not arquivos:
