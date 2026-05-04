@@ -19,15 +19,22 @@ def processar_e_consolidar():
     lista_dfs = []
     for arquivo in arquivos:
         try:
-            cols = ['Data', 'CHN', 'K_P_Mehlich', 'Macro', 'Micro', 'MO', 'pH_CaCl2',
+            cols = ['CHN', 'K_P_Mehlich', 'Macro', 'Micro', 'MO', 'pH_CaCl2',
                     'pH_H2O', 'P_Resina', 'S_ICP', 'S_Turbidimetria', 'Textura']
             df = pd.read_excel(arquivo, usecols = cols, engine = 'calamine')
-            df['Data'] = df['Data'][:][:8]
             os_id = arquivo.parent.name.split("_")[1]
-            ano_mod = datetime.fromtimestamp(arquivo.stat().st_mtime).year
+            data = datetime.fromtimestamp(arquivo.stat().st_mtime)
+            ano = data.year
+            mes = data.month
+            dia = data.day
+            data = f"{dia}/{mes}/{ano}"
             
             df.insert(0, 'OS', os_id)
-            df.insert(1, 'Ano', ano_mod)
+            df.insert(1, 'Ano', ano)
+            df.insert(2, 'Data', data)
+
+            df['Data'] = pd.to_datetime(df['Data'], format = '%d/%m/%Y')
+
             lista_dfs.append(df)
         except Exception as e:
             print(f"Erro no arquivo {arquivo.name}: {e}")

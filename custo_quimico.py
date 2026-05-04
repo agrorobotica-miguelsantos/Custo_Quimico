@@ -9,6 +9,12 @@ import io
 
 # %%
 
+TABELA_PRECOS = {
+    'CHN': 50.0, 'K_P_Mehlich': 3.75, 'Macro': 5.29, 'Micro': 5.11,
+    'MO': 1.48, 'pH_CaCl2': 1.32, 'pH_H2O': 1.32, 'P_Resina': 3.76,
+    'S_ICP': 5.14, 'S_Turbidimetria': 3.13, 'Textura': 5.64
+}
+
 # 1. Configuração da página
 st.set_page_config(page_title = "Painel - Custo Químico",
                    layout = "wide")
@@ -27,174 +33,183 @@ st.markdown(
     unsafe_allow_html = True
 )
 
-# Armazenar o cachê
-@st.cache_data()
+def format_brl(valor):
+    """
+    Formata valores númericos para o padrão de moeda brasileiro
+    """
+    return f"R$ {valor:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
 
+def to_excel(df):
+    """
+    Converte o dataframe para um buffer de Excel.
+    """
+    output = io.BytesIO()
+    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+        df.to_excel(writer, index = False, sheet_name = 'Dados')
+    return output.getvalue()
+
+# Armazenar o cachê
+@st.cache_data(show_spinner = "Carregando dados...  ")
 def carregar_processar():
-    # CAMINHO RELATIVO: Funciona tanto no PC quanto no GitHub
-    # Procura a pasta 'dados' no mesmo local onde o scrip está salvo
     caminho_base = Path(__file__).parent / "dados"
     caminho_csv = caminho_base / "dados_concatenado.csv"
 
-    # verificação da existência do arquivo
     if not caminho_csv.exists():
         return None, None
     
-    # leitura do csv que o arquivo .BAT + sincronização.py irá gerar
     df_base = pd.read_csv(caminho_csv)
+    df_base['Data'] = pd.to_datetime(df_base['Data']).dt.date
 
-    # dicionario com as analises e valores
-    tabela_precos = {
-        'Analise': ['CHN', 'K_P_Mehlich', 'Macro', 'Micro', 'MO', 'pH_CaCl2',
-                    'pH_H2O', 'P_Resina', 'S_ICP', 'S_Turbidimetria', 'Textura'],
-        'Valor_Amostra': [50.0, 3.75, 5.29, 5.11, 1.48, 1.32,
-                          1.32, 3.76, 5.14, 3.13, 5.64]
-    }
+    analises = list(TABELA_PRECOS.keys())
+    valores_series = pd.Series(TABELA_PRECOS)
 
-    # series com valores, analise como index
-    valores_series = pd.Series(tabela_precos['Valor_Amostra'], index = tabela_precos['Analise'])
-    # geração de uma lista com as analises
-    analises = tabela_precos['Analise']
+    # Agrupamentos
+    df_contagem = df_base.groupby(['Ano', 'OS', 'Data'])[analises].count()
+    df_custos = df_contagem.mul(valores_series, axis=1)
 
-    # agrupamentos e cálculos
-    df_contagem = df_base.groupby(['OS', 'Ano'])[analises].count() # OS e Ano fazem agora fazem parte do indice
-    # multiplicação do df agrupado pelas analises da serie
-    df_custos = df_contagem.mul(valores_series, axis = 1) # .mul realiza uma multiplicação entre um df/series e outro objeto escalar, nesse caso uma serie
-
-    # df de contagem das amostras e custos
-    df_contagem['Total_Amostras'] = df_contagem.sum(axis = 1)
-    df_custos['Custo_Total'] = df_custos.sum(axis = 1)
+    df_contagem['Total_Amostras'] = df_contagem.sum(axis=1)
+    df_custos['Custo_Total'] = df_custos.sum(axis=1)
 
     return df_contagem.reset_index(), df_custos.reset_index()
 
 contagem, custos = carregar_processar()
 
-# criação de uma aba lateral para filtros
-with st.sidebar:
+if custos is not None:
+    with st.sidebar:
+        st.image("logo-agrorobotica-png.png", width = 'stretch')
+        st.title("Filtros de Pesquisa")
 
-    # adição da logo da agrorobotica
-    st.image(r"logo-agrorobotica-png.png", width = 'stretch')
-    # titulo da sidebar + botao de sincronização / limpeza de cachê
-    st.title("Filtros")
-    if st.button("Sincronizar"):
-        st.cache_data.clear()
-        st.rerun() # como faz um rerun, o painel é atualizado
-    
-    # seleção do que será colocado no filtro de tempo
-    ano_lista = sorted(custos['Ano'].unique(), reverse = True)
-    # caixa multiselect para selecionar ano
-    sel_anos = st.multiselect("Ano de Referência", ano_lista, default = ano_lista[0])
-    
-    # filtro das OS que estão nos respectivos anos
-    os_lista = sorted(custos[custos['Ano'].isin(sel_anos)]['OS'].unique())
-    # caixa multiselect para OS
-    sel_os = st.multiselect("Ordem de Serviço", os_lista, default = os_lista)
+        if st.button("Sincronizar Dados", width = 'stretch'):
+            st.cache_data.clear()
+            st.rerun()
 
-    # filtro de data
-    today = dt.datetime.now()
-    min_value = dt.datetime(today.year, 1, 1).date()  # Certifique-se de que é um objeto date
-    max_value = dt.datetime(today.year, 12, 31).date()  # Certifique-se de que é um objeto date
+        st.divider()
 
-    # Defina um valor padrão que esteja dentro do intervalo
-    default_value = today  # Ou use um valor específico que você sabe que está dentro do intervalo
+        ano_lista = sorted(custos['Ano'].unique(), reverse = True)
+        sel_anos = st.multiselect("Anos:", ano_lista, default = ano_lista[:1])
 
-    d = st.date_input(
-        "Selecione o período desejado",
-        value = default_value,
-        min_value = min_value,
-        max_value = max_value,
-        format = 'DD/MM/YYYY'
-    )
+        os_lista = sorted(custos[custos['Ano'].isin(sel_anos)]['OS'].unique())
+        sel_os = st.multiselect("Ordens de Serviço:", os_lista, default = os_lista)
 
-# filtragem dos dataframes baseados nos filtros da sidebar
-df_custos = custos[(custos['Ano'].isin(sel_anos)) & (custos['OS'].isin(sel_os))]
-df_contagem = contagem[(contagem['Ano'].isin(sel_anos)) & (contagem['OS'].isin(sel_os))]
+        data_min, data_max = custos['Data'].min(), custos['Data'].max()
 
-st.title("Gestão de Custos - Análises Laboratório Químico")
-st.caption(f"Última atualização dos dados: {dt.datetime.now().strftime('%d/%m/%Y %H:%M')}")
-st.divider()
-
-m1, m2, m3, m4 = st.columns(4)
-m1.metric("Custo Total OS", f"R$ {df_custos['Custo_Total'].sum():,.1f}".replace('.', ',').replace(',', '.', 1))
-m2.metric("Volume de Amostras", f"{int(df_contagem['Total_Amostras'].sum()):,}".replace(",", ".").replace(',', '.', 1))
-m3.metric("N° Ordens de Serviço", len(df_contagem))
-m4.metric("Custo Médio OS", f"R$ {df_custos['Custo_Total'].mean():,.1f}".replace('.', ',').replace(',', '.', 1))
-
-st.divider()
-
-col1, col2 = st.columns([1.5, 1.0])
-
-with col1:
-    st.subheader("Custo Total por OS")
-    fig_barra = px.bar(df_custos,
-                       x='OS',
-                       y='Custo_Total', 
-                       text=df_custos['Custo_Total'].apply(lambda x: f'R$ {x:,.1f}'.replace('.', ',').replace(',', '.', 1)),
-                       labels={'Custo_Total': 'Custo Total (R$)', 'OS': 'Ordem de Serviço'})
-
-    fig_barra.update_traces(marker_color='#5cb23f', textposition='outside')
-    fig_barra.update_xaxes(type='category')
-    fig_barra.update_layout(height=400, margin=dict(t=20, b=20, l=20, r=20))
-    st.plotly_chart(fig_barra, width="stretch")
-
-with col2:
-    st.subheader("% Custo por Análise")
-    cols_analise = [c for c in df_custos if c not in ['OS', 'Ano', 'Custo_Total']]
-    soma_analise = df_custos[cols_analise].sum().sort_values(ascending=False)
+        d = st.date_input(
+            "Período:",
+            value = (data_min, data_max),
+            min_value = data_min,
+            max_value = data_max,
+            format = 'DD/MM/YYYY'
+        )
         
-    fig_rosca = px.pie(names=soma_analise.index, values=soma_analise.values, hole=0.6,
-                    color_discrete_sequence=px.colors.sequential.Greens_r)
-    fig_rosca.update_traces(sort=False) # Mantém a ordem do degradê verde
-    fig_rosca.update_layout(height=400, margin=dict(t=20, b=20, l=20, r=20),
-                        legend=dict(orientation='v', yanchor='middle', xanchor='left', x=1.0, y=0.5))
-    st.plotly_chart(fig_rosca, width = "stretch")
-    
-st.divider()
+        if isinstance(d, tuple) and len(d) == 2:
+            start_date, end_date = d
+        else:
+            start_date = end_date = (d[0] if isinstance(d, tuple) else d)
 
-st.subheader("Quantitativo por Análise")
-soma_q = df_contagem[cols_analise].sum().sort_values(ascending=False).reset_index()
-soma_q.columns = ['Análise', 'Volume']
-fig_qtd = px.bar(soma_q, x='Volume', y='Análise', orientation='h', text_auto=True)
+        mask = (
+            (custos['Ano'].isin(sel_anos)) & 
+            (custos['OS'].isin(sel_os)) &
+            (custos['Data'].between(start_date, end_date))
+        )
+        df_custos_f = custos[mask]
+        df_cont_f = contagem[mask]
 
-# Atualizando a cor do marcador e o estilo do texto
-fig_qtd.update_traces(marker_color='#5cb23f', textfont=dict(size=12, color='white', weight='bold'))
+    st.title("Gestão de Custos - Análises Laboratório Químico")
+    st.caption(f"Última atualização dos dados: {dt.datetime.now().strftime('%d/%m/%Y %H:%M')}")
+    st.divider()
 
-# Atualizando layout do gráfico
-fig_qtd.update_layout(height=400, margin=dict(t=20, b=20, l=20, r=20))
-st.plotly_chart(fig_qtd, use_container_width=True)
+    m1, m2, m3, m4 = st.columns(4)
+    with m1:
+        st.metric("Custo Total", format_brl(df_custos_f['Custo_Total'].sum()))
+    with m2:
+        st.metric("Volume Amostras", f"{int(df_cont_f['Total_Amostras'].sum()):,}".replace(",", "."))
+    with m3:
+        st.metric("Ordens de Serviço", len(df_custos_f['OS'].unique()))
+    with m4:
+        custo_medio = df_custos_f['Custo_Total'].mean() if not df_custos_f.empty else 0
+        st.metric("Custo Médio / OS", format_brl(custo_medio))
 
+    st.divider()
 
-st.divider()
+    # Gráficos
+    col1, col2 = st.columns([1.5, 1.0])
 
-if not df_custos.empty and not df_contagem.empty:
+    with col1:
+            st.subheader("Custo por Ordem de Serviço")
+            fig_barra = px.bar(
+                df_custos_f.sort_values('Custo_Total', ascending = False),
+                x = 'OS', y = 'Custo_Total',
+                color_discrete_sequence = ['#5cb23f'],
+                text_auto = True
+            )
+            fig_barra.update_layout(xaxis_type = 'category', height = 400, margin = dict(t = 10))
+            st.plotly_chart(fig_barra, width = 'stretch')
 
-    tab1, tab2 = st.tabs(['Demonstrativo de Custos', 'Demonstrativo Quantitativo'])
-
-    with tab1:
-        st.dataframe(df_custos, width = "stretch", hide_index=True,
-                     column_config={
-                         'Custo_Total': st.column_config.NumberColumn("Custo Amostras", format="R$ %.2f"),
-                         'Custo_PL': st.column_config.NumberColumn("Custo PL", format="R$ %.2f"),
-                         'Ano': st.column_config.TextColumn("Ano")
-                     })
+    with col2:
+        st.subheader("Distribuição do Custo")
+        cols_analise = list(TABELA_PRECOS.keys())
+        soma_analise = df_custos_f[cols_analise].sum().sort_values(ascending = False)
         
-        buffer = io.BytesIO()
-        with pd.ExcelWriter(buffer, engine='openpyxl') as writer:
-            df_custos.to_excel(writer, index=False)
-        st.download_button("Exportar Custos (Excel)", buffer.getvalue(), "custos_quimico.xlsx", "application/vnd.ms-excel")
+        fig_rosca = px.pie(
+            names = soma_analise.index, 
+            values = soma_analise.values, 
+            hole = 0.5,
+            color_discrete_sequence = px.colors.sequential.Greens_r
+        )
+        fig_rosca.update_layout(height = 400, margin = dict(t = 10), showlegend = True)
+        st.plotly_chart(fig_rosca, width = 'stretch')
+
+    # Detalhamento Quantitativo
+    st.divider()
+    st.subheader("Volume por Tipo de Análise")
+    soma_q = df_cont_f[cols_analise].sum().reset_index()
+    soma_q.columns = ['Análise', 'Qtd']
+    fig_qtd = px.bar(soma_q.sort_values('Qtd', ascending = False), x = 'Qtd',
+                     y = 'Análise',
+                     orientation = 'h',
+                     text_auto = True)
+    fig_qtd.update_traces(marker_color = '#2e7d32')
+    st.plotly_chart(fig_qtd, width = 'stretch')
+
+    # Tabelas e Exportação
+    st.divider()
+    t1, t2 = st.tabs(['📂 Demonstrativo Financeiro', '📊 Demonstrativo Quantitativo'])
+
+    with t1:
+        st.dataframe(
+            df_custos_f, 
+            width = 'stretch', 
+            hide_index = True,
+            column_config = {
+                "Custo_Total": st.column_config.NumberColumn("Total (R$)", format = "%.2f"),
+                "Ano": st.column_config.TextColumn("Ano")
+            }
+        )
+
+        excel_custos = to_excel(df_custos_f)
+        st.download_button(
+            label = "Exportar Planilha - Custos (Excel)",
+            data = excel_custos,
+            file_name = "custos_quimico.xlsx",
+            mime = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
         
-    with tab2:
-        st.dataframe(df_contagem, width = "stretch", hide_index=True,
-                     column_config={
-                         'Total_Amostras': st.column_config.ProgressColumn("Total Amostras", format="%d", min_value=0, 
-                                                                          max_value=int(df_contagem['Total_Amostras'].max())),
-                         'Ano': st.column_config.TextColumn("Ano")
-                     })
-        
-        buffer_q = io.BytesIO()
-        with pd.ExcelWriter(buffer_q, engine='openpyxl') as writer:
-            df_contagem.to_excel(writer, index=False)
-        st.download_button("Exportar Quantitativo (Excel)", buffer_q.getvalue(), "quantitativo_amostras.xlsx", "application/vnd.ms-excel")
-        
+    with t2:
+        st.dataframe(df_cont_f,
+                     width = 'stretch',
+                     hide_index = True,
+                     column_config = {
+                         "Total_Amostras": st.column_config.NumberColumn("Total Amostras")
+                     }
+        )
+
+        excel_contagem = to_excel(df_cont_f)
+        st.download_button(
+            label = "Exportar Planilha - Quantitativo (Excel)",
+            data = excel_contagem,
+            file_name = "quantitativo_quimico.xlsx",
+            mime = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
+
 else:
-    st.warning("Arquivo 'dados_concatenado.csv' não encontrado. Execute a sincronização via arquivo .BAT primeiro.")
+    st.error("⚠️ Erro: Arquivo 'dados_concatenado.csv' não encontrado na pasta raiz.")
