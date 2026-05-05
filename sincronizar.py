@@ -24,7 +24,7 @@ def processar_e_consolidar():
                     'pH_H2O', 'P_Resina', 'S_ICP', 'S_Turbidimetria', 'Textura']
             df = pd.read_excel(arquivo, usecols = cols, engine = 'calamine')
             os_id = arquivo.parent.name.split("_")[1]
-            data = datetime.fromtimestamp(arquivo.stat().ct_mtime)
+            data = datetime.fromtimestamp(arquivo.stat().st_ctime)
             ano = data.year
             mes = data.month
             dia = data.day
