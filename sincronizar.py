@@ -1,9 +1,11 @@
 # %%
+
 import pandas as pd
 from pathlib import Path
 from datetime import datetime
 import os
 
+# %%
 def processar_e_consolidar():
 
     caminho_entrada = r"C:\Users\MiguelSantos\OneDrive - Agrorobotica Fotonica Em Certificacoes Agroambientais\AGROROBOTICA\PROJETOS\Custo Químico\dados"
