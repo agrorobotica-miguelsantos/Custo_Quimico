@@ -118,14 +118,12 @@ if custos is not None:
     st.caption(f"Última atualização dos dados: {dt.datetime.now().strftime('%d/%m/%Y %H:%M')}")
     st.divider()
 
-    m1, m2, m3, m4 = st.columns(4)
+    m1, m2, m3 = st.columns(3)
     with m1:
         st.metric("Custo Total", format_brl(df_custos_f['Custo_Total'].sum()))
     with m2:
-        st.metric("Volume Amostras", f"{int(df_cont_f['Total_Amostras'].sum()):,}".replace(",", "."))
-    with m3:
         st.metric("Ordens de Serviço", len(df_custos_f['OS'].unique()))
-    with m4:
+    with m3:
         custo_medio = df_custos_f['Custo_Total'].mean() if not df_custos_f.empty else 0
         st.metric("Custo Médio / OS", format_brl(custo_medio))
 
@@ -143,6 +141,7 @@ if custos is not None:
                 text_auto = True
             )
             fig_barra.update_layout(xaxis_type = 'category', height = 400, margin = dict(t = 10))
+            fig_barra.update_layout(yaxis_title = 'Custo Total (R$)')
             st.plotly_chart(fig_barra, width = 'stretch')
 
     with col2:
