@@ -271,6 +271,12 @@ if custos is None:
 # ============================================================
 
 with st.sidebar:
+
+    logo_path = Path(__file__).parent / "logo-agrorobotica-png.png"
+
+    if logo_path.exists():
+        st.image(str(logo_path), width=250)
+
     st.markdown("## Gestão de Custos")
     st.caption("Filtros gerais")
 
@@ -407,31 +413,18 @@ os_mais_cara = (
 # HEADER
 # ============================================================
 
-# Caminho da logo
-logo_path = Path(__file__).parent / "logo-agrorobotica-png.png"
-
-# Header com logo + título
-col_titulo, col_logo = st.columns([1.00, 0.00001], vertical_alignment="center")
-
-with col_titulo:
-    st.markdown(
-        f"""
-        <div class="hero">
-            <div class="hero-title">Dashboard Executivo de Custos Laboratoriais</div>
-            <div class="hero-subtitle">
-                Monitoramento financeiro e operacional das análises químicas |
-                Atualizado em {dt.datetime.now().strftime("%d/%m/%Y %H:%M")}
-            </div>
+st.markdown(
+    f"""
+    <div class="hero">
+        <div class="hero-title">Painel de Custos - Laboratório Químico | Agrorobótica</div>
+        <div class="hero-subtitle">
+            Monitoramento de custos do laboratório químico |
+            Atualizado em {dt.datetime.now().strftime("%d/%m/%Y %H:%M")}
         </div>
-        """,
-        unsafe_allow_html=True
-    )
-
-with col_logo:
-    if logo_path.exists():
-        st.image(str(logo_path), width=300)
-    else:
-        st.warning("Logo não encontrada")
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
 
 
 # ============================================================
@@ -708,11 +701,10 @@ elif pagina == "Base de Dados":
 
     st.markdown("## 📂 Base de Dados e Exportações")
 
-    tab1, tab2, tab3 = st.tabs(
+    tab1, tab2 = st.tabs(
         [
-            "💰 Custos",
-            "🧪 Quantitativo",
-            "📋 Base original",
+            "Custos",
+            "Quantitativo"
         ]
     )
 
@@ -752,31 +744,6 @@ elif pagina == "Base de Dados":
             "⬇️ Baixar quantitativo em Excel",
             data=to_excel(df_cont),
             file_name="demonstrativo_quantitativo.xlsx",
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            use_container_width=True,
-        )
-
-    with tab3:
-        st.markdown("### Base original")
-
-        mask_base = (
-            df_base["Ano"].astype(str).isin(anos_sel)
-            & df_base["OS"].astype(str).isin(os_sel)
-            & df_base["Data"].between(data_ini, data_fim)
-        )
-
-        df_base_f = df_base.loc[mask_base].copy()
-
-        st.dataframe(
-            df_base_f,
-            use_container_width=True,
-            hide_index=True,
-        )
-
-        st.download_button(
-            "⬇️ Baixar base original filtrada",
-            data=to_excel(df_base_f),
-            file_name="base_original_filtrada.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             use_container_width=True,
         )
