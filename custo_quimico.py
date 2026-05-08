@@ -89,14 +89,16 @@ if custos is not None:
 
         # Seleção de Período
         data_min, data_max = custos['Data'].min(), custos['Data'].max()
+        
+        # Input manual de datas
         d = st.date_input(
-            "Período:",
-            value=(data_min, data_max),
+            "Período personalizado:",
+            value = (data_min, data_max),
             min_value=data_min,
             max_value=data_max,
             format='DD/MM/YYYY'
         )
-        
+
         # Tratamento da data selecionada
         if isinstance(d, tuple) and len(d) == 2:
             start_date, end_date = d
@@ -112,6 +114,10 @@ if custos is not None:
         df_custos_f = custos[mask]
         df_cont_f = contagem[mask]
 
+        if st.button("Limpar Filtros"):
+            st.session_state.clear()
+            st.rerun()
+
     # %% [6] INTERFACE - CORPO PRINCIPAL
     st.title("Gestão de Custos - Análises Laboratório Químico")
     st.caption(f"Última atualização dos dados: {dt.datetime.now().strftime('%d/%m/%Y %H:%M')}")
@@ -120,12 +126,15 @@ if custos is not None:
     # Bloco de Métricas (KPIs)
     m1, m2, m3 = st.columns(3)
     with m1:
-        st.metric("Custo Total", format_brl(df_custos_f['Custo_Total'].sum()))
+        st.metric("Custo Total",
+                  format_brl(df_custos_f['Custo_Total'].sum()))
     with m2:
-        st.metric("Ordens de Serviço", len(df_custos_f['OS'].unique()))
+        st.metric("Ordens de Serviço",
+                  len(df_custos_f['OS'].unique()))
     with m3:
         custo_medio = df_custos_f['Custo_Total'].mean() if not df_custos_f.empty else 0
-        st.metric("Custo Médio / OS", format_brl(custo_medio))
+        st.metric("Custo Médio / OS",
+                  format_brl(custo_medio))
 
     st.divider()
 
@@ -133,14 +142,43 @@ if custos is not None:
     col1, col2 = st.columns([1.5, 1.0])
 
     with col1:
-        st.subheader("Custo por Ordem de Serviço")
-        fig_barra = px.bar(
-            df_custos_f.sort_values('Custo_Total', ascending=False),
-            x='OS', y='Custo_Total',
-            color_discrete_sequence=['#5cb23f'],
-            text_auto=True
+        df_barra = df_custos_f.sort_values('Custo_Total', ascending = False).round(2).copy()
+
+        df_barra['texto'] = df_barra['Custo_Total'].apply(
+            lambda x: format_brl(x)
         )
-        fig_barra.update_layout(xaxis_type='category', height=400, margin=dict(t=10), yaxis_title='Custo Total (R$)')
+
+        st.subheader("Custo por Ordem de Serviço")
+
+        fig_barra = px.bar(
+            df_barra,
+            x = 'OS',
+            y = 'Custo_Total',
+            color_discrete_sequence = ['#2e7d32'],
+            text_auto = 'texto'
+        )
+        
+        fig_barra.update_traces(
+            textfont = dict(
+                color = 'white',
+                size = 12
+            ),
+            textposition='inside'
+        )
+
+        fig_barra.update_yaxes(
+            tickprefix="R$ ",
+            tickformat=",.0f"
+        )
+
+        fig_barra.update_layout(
+            separators=",.",
+            xaxis_type='category',
+            height=400,
+            margin=dict(t=10),
+            yaxis_title='Custo Total (R$)'
+        )
+
         st.plotly_chart(fig_barra, use_container_width=True)
 
     with col2:
@@ -155,10 +193,25 @@ if custos is not None:
             
             # Criação do texto personalizado: R$ Valor (0.0%)
             df_dist['texto_label'] = df_dist.apply(
-                lambda x: f"{format_brl(x['Custo'])} ({ (x['Custo']/total_custo)*100:.1f}%)" if total_custo > 0 else "", 
+                lambda x: (
+                    f"{format_brl(x['Custo'])} ({ (x['Custo']/total_custo)*100:.1f}%)"
+                    if x['Custo'] > 0 and total_custo > 0
+                    else ""
+                ),
                 axis=1
             )
+            
+            limite = df_dist['Custo'].max() * 0.15
 
+            df_dist['text_position'] = df_dist['Custo'].apply(
+                lambda x: (
+
+                'inside' if x > limite
+                else 'outside' if x > 0
+                else 'none'
+                )
+            )
+            
             fig_dist_barra = px.bar(
                 df_dist,
                 x = 'Custo',
@@ -169,12 +222,12 @@ if custos is not None:
             )
 
             fig_dist_barra.update_traces(
-                textposition = 'auto',
-                textfont = dict(
-                    size = 12,
-                    color = "white"
-                ),
-                hovertemplate = "<b>%{y}</b><br>Custo: %{text}<extra></extra>"
+                textposition=df_dist['text_position'],
+                textfont=dict(size=13),
+                insidetextfont=dict(color='white'),
+                outsidetextfont=dict(color='black'),
+                cliponaxis=False,
+                hovertemplate="<b>%{y}</b><br>Custo: %{text}<extra></extra>"
             )
 
             fig_dist_barra.update_layout(
