@@ -590,7 +590,7 @@ if pagina == "Visão Geral":
 
         df_dist["texto_label"] = df_dist.apply(
             lambda x: (
-                f"{format_brl(x['Custo'])} ({(x['Custo'].round(1) / total_custo_dist) * 100:.1f}%)"
+                f"{format_brl(x['Custo'])} ({(x['Custo'] / total_custo_dist) * 100:.1f}%)"
                 if x["Custo"] > 0 and total_custo_dist > 0
                 else ""
             ),
