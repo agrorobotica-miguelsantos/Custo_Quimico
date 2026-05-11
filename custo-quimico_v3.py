@@ -746,6 +746,26 @@ elif pagina == "Análise Financeira":
             df_pareto["Percentual"] = df_pareto["Custo"] / df_pareto["Custo"].sum()
             df_pareto["Percentual_Acumulado"] = df_pareto["Percentual"].cumsum()
 
+            analise_top1 = df_pareto.iloc[0]["Análise"]
+            custo_top1 = df_pareto.iloc[0]["Custo"]
+            perc_top1 = df_pareto.iloc[0]["Percentual"]
+
+            top3 = df_pareto.head(3)
+            perc_top3 = top3["Percentual"].sum()
+            analises_top3 = ", ".join(top3["Análise"].tolist())
+
+            st.markdown(
+                f"""
+                <div class="insight-box">
+                    <b>Leitura do Pareto:</b> a análise <b>{analise_top1}</b> é a principal fonte de custo,
+                    representando <b>{perc_top1:.1%}</b> do total ({format_brl(custo_top1)}).
+                    As 3 análises mais relevantes — <b>{analises_top3}</b> — concentram
+                    <b>{perc_top3:.1%}</b> do custo total.
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+
             fig = go.Figure()
 
             fig.add_trace(
