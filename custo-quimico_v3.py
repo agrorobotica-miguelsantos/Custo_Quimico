@@ -25,15 +25,15 @@ st.set_page_config(
 
 TABELA_PRECOS = {
     "CHN": 50.0,
-    "KP-Mehlich": 3.75,
+    "K_P_Mehlich": 3.75,
     "Macro": 5.29,
     "Micro": 5.11,
     "MO": 1.48,
-    "pH-CaCl2": 1.32,
-    "pH-H2O": 1.32,
-    "P-Resina": 3.76,
-    "S-ICP": 5.14,
-    "S-Turbidimetria": 3.13,
+    "pH_CaCl2": 1.32,
+    "pH_H2O": 1.32,
+    "P_Resina": 3.76,
+    "S_ICP": 5.14,
+    "S_Turbidimetria": 3.13,
     "Textura": 5.64,
 }
 
