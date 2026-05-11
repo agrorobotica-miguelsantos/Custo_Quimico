@@ -585,6 +585,7 @@ if pagina == "Visão Geral":
 
         df_dist = soma_custos_analises.sort_values(ascending=True).reset_index()
         df_dist.columns = ["Análise", "Custo"]
+        df_dist['Custo'] = df_dist['Custo'].round(1)
 
         total_custo_dist = df_dist["Custo"].sum()
 
