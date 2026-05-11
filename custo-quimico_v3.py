@@ -597,7 +597,7 @@ if pagina == "Visão Geral":
             axis=1,
         )
 
-        limite = df_dist["Custo"].max() * 0.15 if not df_dist.empty else 0
+        limite = df_dist["Custo"].max() * 0.10 if not df_dist.empty else 0
 
         df_dist["text_position"] = df_dist["Custo"].apply(
             lambda x: (
