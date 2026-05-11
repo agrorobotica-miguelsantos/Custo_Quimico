@@ -1,3 +1,4 @@
+# %%
 # ============================================================
 # DASHBOARD EXECUTIVO - CUSTOS LABORATORIAIS
 # Versão redesenhada com visão executiva, Pareto e tendências
@@ -370,34 +371,57 @@ if analises_sel:
 # MÉTRICAS
 # ============================================================
 
+mask_base = (
+    df_base["Ano"].astype(str).isin(anos_sel)
+    & df_base["OS"].astype(str).isin(os_sel)
+    & df_base["Data"].between(data_ini, data_fim)
+)
+
+df_base_filtrado = df_base.loc[mask_base].copy()
+
 total_custo = df_custos["Custo_Total"].sum()
 total_os = df_custos["OS"].nunique()
 
-total_analises = df_cont["Total_Amostras"].sum()
+# Total de amostras recebidas
+total_amostras_recebidas = df_base_filtrado.shape[0]
 
-total_amostras = (
-    df_base.loc[
-        (
-            df_base["Ano"].astype(str).isin(anos_sel)
-        ) &
-        (
-            df_base["OS"].astype(str).isin(os_sel)
-        ) &
-        (
-            df_base["Data"].between(data_ini, data_fim)
-        ) &
-        (
-            df_base[analises_sel].notna().any(axis=1)
-        )
-    ]
-    .shape[0]
+# Total de amostras com pelo menos uma análise feita no lab químico
+total_amostras_quimico = (
+    df_base_filtrado[analises_sel]
+    .eq("X")
+    .any(axis=1)
+    .sum()
+)
+
+# Total de análises realizadas no lab químico
+total_analises = (
+    df_base_filtrado[analises_sel]
+    .eq("X")
+    .sum()
+    .sum()
+)
+
+# Percentual de amostras atendidas pelo laboratório químico
+perc_amostras_quimico = (
+    total_amostras_quimico / total_amostras_recebidas
+    if total_amostras_recebidas > 0 else 0
 )
 
 ticket_os = total_custo / total_os if total_os > 0 else 0
-ticket_amostra = total_custo / total_amostras if total_amostras > 0 else 0
+
+ticket_amostra = (
+    total_custo / total_amostras_quimico
+    if total_amostras_quimico > 0 else 0
+)
 
 soma_custos_analises = df_custos[analises_sel].sum().sort_values(ascending=False)
-soma_qtd_analises = df_cont[analises_sel].sum().sort_values(ascending=False)
+
+soma_qtd_analises = (
+    df_base_filtrado[analises_sel]
+    .eq("X")
+    .sum()
+    .sort_values(ascending=False)
+)
 
 analise_maior_custo = soma_custos_analises.idxmax() if not soma_custos_analises.empty else "-"
 analise_maior_volume = soma_qtd_analises.idxmax() if not soma_qtd_analises.empty else "-"
@@ -408,6 +432,32 @@ os_mais_cara = (
     else "-"
 )
 
+# ============================================================
+# COBERTURA DOS PARÂMETROS
+# ============================================================
+
+total_amostras_recebidas = df_base_filtrado.shape[0]
+
+df_cobertura = pd.DataFrame({
+    "Análise": analises_sel,
+})
+
+df_cobertura["Qtd_Realizada"] = df_cobertura["Análise"].apply(
+    lambda x: df_base_filtrado[x].eq("X").sum()
+)
+
+df_cobertura["Cobertura"] = (
+    df_cobertura["Qtd_Realizada"] / total_amostras_recebidas
+)
+
+df_cobertura["Cobertura_%"] = (
+    df_cobertura["Cobertura"] * 100
+).round(1)
+
+df_cobertura = df_cobertura.sort_values(
+    "Cobertura",
+    ascending=False
+)
 
 # ============================================================
 # HEADER
@@ -441,16 +491,32 @@ if pagina == "Visão Geral":
         card_kpi("Custo Total", format_brl(total_custo), "Valor total filtrado")
 
     with c2:
-        card_kpi("Total de Amostras", format_num(total_amostras), "Total Amostras")
+        card_kpi(
+            "Amostras Recebidas",
+            format_num(total_amostras_recebidas),
+            "Total de linhas da base"
+        )
 
     with c3:
-        card_kpi("Custo por Amostra", format_brl(ticket_amostra), "Eficiência média")
-
-    with c5:
-        card_kpi("Ordens de Serviço", format_num(total_os), "OS distintas no período")
+        card_kpi(
+            "Amostras no Lab Químico",
+            format_num(total_amostras_quimico),
+            f"{perc_amostras_quimico:.1%} do total"
+        )
 
     with c4:
-        card_kpi("Total de Análises", format_num(total_analises), "Análises Realizadas")
+        card_kpi(
+            "Análises Realizadas",
+            format_num(total_analises),
+            "Parâmetros marcados com X"
+        )
+
+    with c5:
+        card_kpi(
+            "Custo por Amostra",
+            format_brl(ticket_amostra),
+            "Considerando amostras feitas no químico"
+        )
 
     st.markdown("<br>", unsafe_allow_html=True)
 
@@ -478,7 +544,7 @@ if pagina == "Visão Geral":
             unsafe_allow_html=True,
         )
 
-    col1, col2 = st.columns([1.4, 1])
+    col1, col2, col3 = st.columns([1, 1, 1])
 
     with col1:
         st.markdown("### Ranking de custo por OS")
@@ -577,6 +643,75 @@ if pagina == "Visão Geral":
         )
 
         st.plotly_chart(fig_dist_barra, use_container_width=True)
+
+    with col3:
+        st.markdown("### Cobertura dos Parâmetros")
+
+        df_cob = df_cobertura.sort_values("Cobertura", ascending=True).copy()
+
+        df_cob["texto_label"] = df_cob.apply(
+            lambda x: (
+                f"{x['Qtd_Realizada']:.0f} ({x['Cobertura_%']:.1f}%)"
+                if x["Qtd_Realizada"] > 0
+                else ""
+            ),
+            axis=1,
+        )
+
+        limite_cob = df_cob["Cobertura"].max() * 0.15 if not df_cob.empty else 0
+
+        df_cob["text_position"] = df_cob["Cobertura"].apply(
+            lambda x: (
+                "inside"
+                if x > limite_cob
+                else "outside"
+                if x > 0
+                else "none"
+            )
+        )
+
+        fig_cobertura = px.bar(
+            df_cob,
+            x="Cobertura",
+            y="Análise",
+            orientation="h",
+            text="texto_label",
+            color_discrete_sequence=[CORES["verde"]],
+        )
+
+        fig_cobertura.update_traces(
+            textposition=df_cob["text_position"],
+            textfont=dict(size=13),
+            insidetextfont=dict(color="white"),
+            outsidetextfont=dict(color="black"),
+            cliponaxis=False,
+            hovertemplate=(
+                "<b>%{y}</b><br>"
+                "Realizadas: %{customdata[0]:.0f}<br>"
+                "Cobertura: %{customdata[1]:.1f}%<extra></extra>"
+            ),
+            customdata=df_cob[["Qtd_Realizada", "Cobertura_%"]],
+        )
+
+        fig_cobertura.update_layout(
+            height=430,
+            margin=dict(t=20, b=10, l=10, r=10),
+            xaxis_title=None,
+            yaxis_title=None,
+            xaxis_showticklabels=False,
+            xaxis_visible=False,
+            uniformtext_minsize=12,
+            uniformtext_mode="show",
+            plot_bgcolor="white",
+            paper_bgcolor="white",
+            showlegend=False,
+        )
+
+        st.plotly_chart(
+            fig_cobertura,
+            use_container_width=True,
+            key="grafico_cobertura_parametros"
+        )
 
 
 # ============================================================
