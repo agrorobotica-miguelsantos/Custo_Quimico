@@ -504,12 +504,12 @@ if pagina == "Visão Geral":
             f"{perc_amostras_quimico:.1%} do total"
         )
 
-    with c4:
-        card_kpi(
-            "Análises Realizadas",
-            format_num(total_analises),
-            "Parâmetros marcados com X"
-        )
+    #with c4:
+        #card_kpi(
+            #"Análises Realizadas",
+            #format_num(total_analises),
+            #"Parâmetros marcados com X"
+        #)
 
     with c5:
         card_kpi(
@@ -728,7 +728,7 @@ elif pagina == "Análise Financeira":
         st.metric("Custo total", format_brl(total_custo))
 
     with c2:
-        st.metric("Ticket médio por OS", format_brl(ticket_os))
+        st.metric("Custo médio por OS", format_brl(ticket_os))
 
     with c3:
         st.metric("Análise de maior custo", analise_maior_custo)
