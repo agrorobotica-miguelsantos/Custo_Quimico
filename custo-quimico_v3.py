@@ -1,7 +1,6 @@
 # %%
 # ============================================================
-# DASHBOARD EXECUTIVO - CUSTOS LABORATORIAIS
-# Versão redesenhada com visão executiva, Pareto e tendências
+# PAINEL - CUSTOS LABORATORIAIS | Agrorobótica
 # ============================================================
 
 import io
@@ -44,7 +43,7 @@ CORES = {
     "verde_escuro": "#12372A",
     "verde": "#2D6A4F",
     "verde_claro": "#74C69D",
-    "fundo": "#F6F8FA",
+    "fundo": "#FFFFFF",
     "card": "#FFFFFF",
     "texto": "#1F2937",
     "cinza": "#6B7280",
@@ -478,14 +477,14 @@ st.markdown(
 
 
 # ============================================================
-# PÁGINA 1 - VISÃO EXECUTIVA
+# PÁGINA 1 - VISÃO GERAL
 # ============================================================
 
 if pagina == "Visão Geral":
 
     st.markdown('## Visão Geral')
 
-    c1, c2, c3, c4, c5 = st.columns(5)
+    c1, c2, c3, c5 = st.columns(4)
 
     with c1:
         card_kpi("Custo Total", format_brl(total_custo), "Valor total filtrado")
