@@ -585,13 +585,12 @@ if pagina == "Visão Geral":
 
         df_dist = soma_custos_analises.sort_values(ascending=True).reset_index()
         df_dist.columns = ["Análise", "Custo"]
-        df_dist['Custo'] = df_dist['Custo'].round(1)
 
         total_custo_dist = df_dist["Custo"].sum()
 
         df_dist["texto_label"] = df_dist.apply(
             lambda x: (
-                f"{format_brl(x['Custo'])} ({(x['Custo'] / total_custo_dist) * 100:.1f}%)"
+                f"{format_brl(x['Custo'])} ({(x['Custo'] / total_custo_dist) * 100:.0f}%)"
                 if x["Custo"] > 0 and total_custo_dist > 0
                 else ""
             ),
