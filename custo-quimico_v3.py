@@ -758,7 +758,7 @@ elif pagina == "Análise Financeira":
                 f"""
                 <div class="insight-box">
                     <b>Leitura do Pareto:</b> a análise <b>{analise_top1}</b> é a principal fonte de custo,
-                    representando <b>{perc_top1:.1%}</b> do total ({format_brl(custo_top1)}).
+                    representando <b>{perc_top1:.1%}</b> do total ({format_brl(custo_top1)}).<br>
                     As 3 análises mais relevantes — <b>{analises_top3}</b> — concentram
                     <b>{perc_top3:.1%}</b> do custo total.
                 </div>
