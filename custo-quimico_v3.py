@@ -6,6 +6,7 @@
 import io
 import datetime as dt
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 import pandas as pd
 import streamlit as st
@@ -446,13 +447,14 @@ df_cobertura = df_cobertura.sort_values(
 # HEADER
 # ============================================================
 
+hora_brasilia = dt.datetime.now(ZoneInfo("America/Sao_Paulo"))
 st.markdown(
     f"""
     <div class="hero">
         <div class="hero-title">Painel de Custos - Laboratório Químico | Agrorobótica</div>
         <div class="hero-subtitle">
             Monitoramento de custos do laboratório químico |
-            Atualizado em {dt.datetime.now().strftime("%d/%m/%Y %H:%M")}
+            Atualizado em {hora_brasilia.strftime("%d/%m/%Y %H:%M")}
         </div>
     </div>
     """,
