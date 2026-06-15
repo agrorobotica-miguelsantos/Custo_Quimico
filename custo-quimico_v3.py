@@ -818,35 +818,6 @@ elif pagina == "Análise Financeira":
 
     st.divider()
 
-    st.markdown("### Custo detalhado por OS e análise")
-
-    df_melt_custos = df_custos.melt(
-        id_vars=["Ano", "OS", "Data", "Custo_Total"],
-        value_vars=analises_sel,
-        var_name="Análise",
-        value_name="Custo",
-    )
-
-    df_melt_custos = df_melt_custos[df_melt_custos["Custo"] > 0]
-
-    fig = px.bar(
-        df_melt_custos,
-        x="OS",
-        y="Custo",
-        color="Análise",
-        hover_data=["Data"],
-    )
-
-    fig.update_layout(
-        xaxis_title="OS",
-        xaxis_type = "category",
-        yaxis_title="Custo",
-        legend_title="Análise",
-    )
-
-    st.plotly_chart(aplicar_layout_grafico(fig, 500), use_container_width=True)
-
-
 # ============================================================
 # PÁGINA 3 - BASE DE DADOS
 # ============================================================
