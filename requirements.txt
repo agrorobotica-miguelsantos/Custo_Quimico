@@ -1,6 +1,4 @@
-io
-datetime
+streamlit
 pandas
 plotly
 openpyxl
-zoneinfo
